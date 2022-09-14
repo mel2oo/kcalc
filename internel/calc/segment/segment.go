@@ -73,5 +73,4 @@ func (s *Segment) Description() {
 
 	ltb.SetTitle("Segment Descriptor (Low 32-bits)")
 	ltb.SetOutputMirror(os.Stdout)
-	ltb.Style().Options.SeparateRows = true
 }
