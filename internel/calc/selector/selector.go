@@ -99,13 +99,13 @@ func (s *Selector) FPrint() {
 	intb.Style().Options.DrawBorder = true
 
 	intb.AppendHeader(table.Row{
-		"Member", "Value", "Mean",
+		"Index", "Member", "Value", "Mean",
 	})
 
 	intb.AppendRows([]table.Row{
-		{"RPL", s.RPL, "Requested Privilege Level"},
-		{"TI", s.TI, "Table Indicator (0:GDT;1:LDT)"},
-		{"Index", s.Index, "Segment Descriptor Address = GDT/IDT Base Address + 8*Index"},
+		{"0~1", "RPL", s.RPL, "Requested Privilege Level"},
+		{"2", "TI", s.TI, "Table Indicator (0:GDT;1:LDT)"},
+		{"3~15", "Index", s.Index, "Segment Descriptor Address = GDT/IDT Base Address + 8*Index"},
 	}, table.RowConfig{AutoMerge: true})
 
 	intb.Render()
