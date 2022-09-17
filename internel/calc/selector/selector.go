@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"kcalc/internel/flag"
+	"os"
 	"strconv"
 
+	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/jedib0t/go-pretty/v6/text"
 	"github.com/urfave/cli/v2"
 )
 
@@ -25,15 +28,14 @@ func NewCommand() *cli.Command {
 }
 
 func action(ctx *cli.Context) error {
-	va := ctx.Int64(flag.ValueName)
-	bva := align(strconv.FormatInt(va, 2))
-
-	ser, err := parse(bva)
+	s, err := NewSelector(ctx.Int64(flag.ValueName))
 	if err != nil {
 		return err
 	}
 
-	return ser.FPrint()
+	s.FPrint()
+	s.Description()
+	return nil
 }
 
 const (
@@ -51,40 +53,86 @@ func align(str string) (s string) {
 }
 
 type Selector struct {
-	RPL   string
-	TI    string
-	Index string
+	Origin int64
+	Binary string
+
+	RPL   int64
+	TI    int64
+	Index int64
 }
 
-func parse(s string) (*Selector, error) {
-	if len(s) != sLen {
-		return nil, fmt.Errorf("selector length error: %d", len(s))
+func NewSelector(o int64) (*Selector, error) {
+	bin := align(strconv.FormatInt(o, 2))
+
+	rpl, err := strconv.ParseInt(bin[14:], 2, 0)
+	if err != nil {
+		return nil, errFormat
+	}
+
+	ti, err := strconv.ParseInt(bin[13:14], 2, 0)
+	if err != nil {
+		return nil, errFormat
+	}
+
+	index, err := strconv.ParseInt(bin[:13], 2, 0)
+	if err != nil {
+		return nil, errFormat
 	}
 
 	return &Selector{
-		RPL:   s[14:],
-		TI:    s[13:14],
-		Index: s[:13],
+		Origin: o,
+		Binary: bin,
+
+		RPL:   rpl,
+		TI:    ti,
+		Index: index,
 	}, nil
 }
 
-func (s *Selector) FPrint() error {
-	rpl, err := strconv.ParseInt(s.RPL, 2, 0)
-	if err != nil {
-		return errFormat
-	}
+func (s *Selector) FPrint() {
+	intb := table.NewWriter()
 
-	ti, err := strconv.ParseInt(s.TI, 2, 0)
-	if err != nil {
-		return errFormat
-	}
+	intb.SetTitle(fmt.Sprintf("# Input: %d, Binary: %s", s.Origin, s.Binary))
+	intb.SetOutputMirror(os.Stdout)
+	intb.Style().Options.SeparateRows = true
+	intb.Style().Options.SeparateColumns = true
+	intb.Style().Options.DrawBorder = true
 
-	index, err := strconv.ParseInt(s.Index, 2, 0)
-	if err != nil {
-		return errFormat
-	}
+	intb.AppendHeader(table.Row{
+		"Member", "Value", "Mean",
+	})
 
-	fmt.Printf("RPL: %d\nTI: %d\nIndex: %d\n", rpl, ti, index)
+	intb.AppendRows([]table.Row{
+		{"RPL", s.RPL, "Requested Privilege Level"},
+		{"TI", s.TI, "Table Indicator (0:GDT;1:LDT)"},
+		{"Index", s.Index, "Segment Descriptor Address = GDT/IDT Base Address + 8*Index"},
+	}, table.RowConfig{AutoMerge: true})
 
-	return nil
+	intb.Render()
+}
+
+func (s *Selector) Description() {
+	destb := table.NewWriter()
+
+	destb.SetTitle("Selector Structure")
+	destb.SetOutputMirror(os.Stdout)
+	destb.Style().Options.SeparateRows = true
+	destb.Style().Title.Align = text.AlignCenter
+
+	destb.AppendRows([]table.Row{
+		{
+			15, 14, 13, 12,
+			11, 10, 9, 8,
+			7, 6, 5, 4,
+			3, 2, 1, 0,
+		},
+		{
+			"Index", "Index", "Index", "Index",
+			"Index", "Index", "Index", "Index",
+			"Index", "Index", "Index", "Index",
+			"Index", "TI", "RPL", "RPL",
+		},
+	}, table.RowConfig{AutoMerge: true})
+
+	destb.Render()
 }
