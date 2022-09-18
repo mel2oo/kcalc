@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"kcalc/internel/flag"
+	"kcalc/pkg/conv"
 	"os"
 	"strconv"
 
@@ -19,7 +20,7 @@ var (
 func NewCommand() *cli.Command {
 	return &cli.Command{
 		Name:   "selector",
-		Usage:  "Parse Selector",
+		Usage:  "Parse Segment Selector",
 		Action: action,
 		Flags: []cli.Flag{
 			&flag.ValueFlag,
@@ -38,20 +39,6 @@ func action(ctx *cli.Context) error {
 	return nil
 }
 
-const (
-	sLen = 16
-)
-
-func align(str string) (s string) {
-	l1 := sLen - len(str)
-	for l1 > 0 {
-		s += "0"
-		l1--
-	}
-
-	return s + str
-}
-
 type Selector struct {
 	Origin int64
 	Binary string
@@ -62,7 +49,7 @@ type Selector struct {
 }
 
 func NewSelector(o int64) (*Selector, error) {
-	bin := align(strconv.FormatInt(o, 2))
+	bin := conv.Int2Bin(o, 16)
 
 	rpl, err := strconv.ParseInt(bin[14:], 2, 0)
 	if err != nil {
@@ -106,7 +93,7 @@ func (s *Selector) FPrint() {
 		{"0~1", "RPL", s.RPL, "Requested Privilege Level"},
 		{"2", "TI", s.TI, "Table Indicator (0:GDT;1:LDT)"},
 		{"3~15", "Index", s.Index, "Segment Descriptor Address = GDT/IDT Base Address + 8*Index"},
-	}, table.RowConfig{AutoMerge: true})
+	})
 
 	intb.Render()
 }
@@ -121,18 +108,13 @@ func (s *Selector) Description() {
 
 	destb.AppendRows([]table.Row{
 		{
-			15, 14, 13, 12,
-			11, 10, 9, 8,
-			7, 6, 5, 4,
-			3, 2, 1, 0,
+			"15,14,13,12,11,10,9,8,7,6,5,4,3",
+			"2", "1, 0",
 		},
 		{
-			"Index", "Index", "Index", "Index",
-			"Index", "Index", "Index", "Index",
-			"Index", "Index", "Index", "Index",
-			"Index", "TI", "RPL", "RPL",
+			"Index", "TI", "RPL",
 		},
-	}, table.RowConfig{AutoMerge: true})
+	})
 
 	destb.Render()
 }

@@ -9,4 +9,11 @@ var (
 		Value: 0,
 		Usage: "input a value",
 	}
+
+	AllName = "all"
+	AllFlag = cli.BoolFlag{
+		Name:  AllName,
+		Value: true,
+		Usage: "show structure descriptor",
+	}
 )
