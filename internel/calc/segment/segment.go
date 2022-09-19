@@ -2,6 +2,7 @@ package segment
 
 import (
 	"kcalc/internel/flag"
+	"kcalc/pkg/conv"
 	"os"
 
 	"github.com/jedib0t/go-pretty/v6/table"
@@ -15,7 +16,7 @@ func NewCommand() *cli.Command {
 		Usage:  "Parse Segment Descriptor",
 		Action: action,
 		Flags: []cli.Flag{
-			&flag.ValueFlag,
+			&flag.AddrFlag,
 		},
 	}
 }
@@ -33,17 +34,28 @@ func action(ctx *cli.Context) error {
 }
 
 type Segment struct {
+	Origin string
+	Binary *conv.Address
 }
 
 func NewSegment(ctx *cli.Context) (*Segment, error) {
-	return &Segment{}, nil
+	ori := ctx.String(flag.AddrName)
+
+	bin, err := conv.Addr64ToBin(ori)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Segment{
+		Origin: ori,
+		Binary: bin,
+	}, nil
 }
 
 func (s *Segment) FPrint() {}
 
 func (s *Segment) Description() {
 	htb := table.NewWriter()
-
 	htb.SetTitle("Segment Descriptor (High 32-bits)")
 	htb.SetOutputMirror(os.Stdout)
 	htb.Style().Options.SeparateRows = true
@@ -66,11 +78,22 @@ func (s *Segment) Description() {
 			"Base 23:16",
 		},
 	})
-
 	htb.Render()
 
 	ltb := table.NewWriter()
-
 	ltb.SetTitle("Segment Descriptor (Low 32-bits)")
 	ltb.SetOutputMirror(os.Stdout)
+	ltb.Style().Options.SeparateRows = true
+	ltb.Style().Title.Align = text.AlignCenter
+	ltb.AppendRows([]table.Row{
+		{
+			"31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16",
+			"15,14,13,12,11,10,9,8,7,6,5,4,3,2,1",
+		},
+		{
+			"Base 15:00",
+			"Seg.Limit 15:00",
+		},
+	})
+	ltb.Render()
 }
